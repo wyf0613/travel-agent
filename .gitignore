@@ -1,0 +1,24 @@
+# 密钥：绝对不能进版本库
+.env
+backend/.env
+*.key
+
+# 虚拟环境
+.venv/
+backend/.venv/
+venv/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# 前端依赖（如将来引入构建工具）
+node_modules/
+dist/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store

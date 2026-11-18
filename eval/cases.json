@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "purpose": "阶段 2 离线评测集：度量 Agent 编排层的质量（schema 兜底/幻觉拦截/预算合规/轮次控制）",
+    "scope_note": "零 Key 离线运行，用 FakeLLM 按 case 脚本模拟模型输出。因此度量的是编排逻辑质量，不是真实 LLM 的准确率。真实模型质量需另接 online 评测（配 Key）。",
+    "behaviors": {
+      "submit_valid": "模型按规则查候选后提交合法计划",
+      "submit_hallucinated": "模型提交引用了没搜过的 POI（幻觉），应被拦截",
+      "submit_bad_schema": "模型提交缺字段/错类型的 schema，应被校验拦下",
+      "no_submit": "模型只查不提交直到触顶，应降级",
+      "bad_json_then_ok": "先输出坏 JSON，再自愈提交"
+    }
+  },
+  "cases": [
+    {"id": "C01", "city": "北京", "days": 3, "prefs": ["历史", "美食"], "budget": 3000, "behavior": "submit_valid"},
+    {"id": "C02", "city": "上海", "days": 2, "prefs": ["地标"], "budget": 2500, "behavior": "submit_valid"},
+    {"id": "C03", "city": "成都", "days": 4, "prefs": ["美食", "自然"], "budget": 4000, "behavior": "submit_valid"},
+    {"id": "C04", "city": "杭州", "days": 2, "prefs": ["园林"], "budget": 2000, "behavior": "submit_valid"},
+    {"id": "C05", "city": "西安", "days": 3, "prefs": ["历史古迹"], "budget": 2800, "behavior": "submit_valid"},
+    {"id": "C06", "city": "广州", "days": 2, "prefs": ["美食"], "budget": 1800, "behavior": "submit_valid"},
+    {"id": "C07", "city": "重庆", "days": 3, "prefs": ["美食", "地标"], "budget": 2600, "behavior": "submit_valid"},
+    {"id": "C08", "city": "三亚", "days": 5, "prefs": ["海滩"], "budget": 6000, "behavior": "submit_valid"},
+    {"id": "C09", "city": "南京", "days": 2, "prefs": ["历史"], "budget": 1500, "behavior": "submit_valid"},
+    {"id": "C10", "city": "厦门", "days": 3, "prefs": ["海岛", "美食"], "budget": 3200, "behavior": "submit_valid"},
+    {"id": "C11", "city": "大连", "days": 2, "prefs": [], "budget": 2200, "behavior": "submit_valid"},
+    {"id": "C12", "city": "北京", "days": 1, "prefs": ["历史"], "budget": 1200, "behavior": "submit_valid"},
+    {"id": "C13", "city": "上海", "days": 7, "prefs": ["购物", "美食"], "budget": 8000, "behavior": "submit_valid"},
+    {"id": "C14", "city": "成都", "days": 1, "prefs": [], "budget": 1000, "behavior": "submit_valid"},
+    {"id": "C15", "city": "杭州", "days": 6, "prefs": ["自然"], "budget": 5000, "behavior": "submit_valid"},
+    {"id": "C16", "city": "拉萨", "days": 4, "prefs": ["人文"], "budget": 4500, "behavior": "submit_valid"},
+    {"id": "C17", "city": "大理", "days": 3, "prefs": ["自然", "摄影"], "budget": 3000, "behavior": "submit_valid"},
+    {"id": "C18", "city": "哈尔滨", "days": 5, "prefs": ["冰雪"], "budget": 5500, "behavior": "submit_valid"},
+    {"id": "C19", "city": "青岛", "days": 3, "prefs": ["海滨", "美食"], "budget": 2800, "behavior": "submit_valid"},
+    {"id": "C20", "city": "苏州", "days": 2, "prefs": ["园林"], "budget": 1900, "behavior": "submit_valid"},
+
+    {"id": "C21", "city": "北京", "days": 2, "prefs": ["历史"], "budget": 2000, "behavior": "submit_hallucinated"},
+    {"id": "C22", "city": "上海", "days": 2, "prefs": [], "budget": 2000, "behavior": "submit_hallucinated"},
+    {"id": "C23", "city": "成都", "days": 3, "prefs": ["美食"], "budget": 3000, "behavior": "submit_hallucinated"},
+
+    {"id": "C24", "city": "杭州", "days": 2, "prefs": ["园林"], "budget": 2000, "behavior": "submit_bad_schema"},
+    {"id": "C25", "city": "西安", "days": 3, "prefs": ["历史"], "budget": 2500, "behavior": "submit_bad_schema"},
+
+    {"id": "C26", "city": "南京", "days": 2, "prefs": [], "budget": 1500, "behavior": "no_submit"},
+    {"id": "C27", "city": "厦门", "days": 3, "prefs": ["海岛"], "budget": 3000, "behavior": "no_submit"},
+
+    {"id": "C28", "city": "广州", "days": 2, "prefs": ["美食"], "budget": 1800, "behavior": "bad_json_then_ok"},
+    {"id": "C29", "city": "重庆", "days": 3, "prefs": ["美食"], "budget": 2600, "behavior": "bad_json_then_ok"},
+
+    {"id": "C30", "city": "大理", "days": 3, "prefs": ["自然", "摄影"], "budget": null, "behavior": "submit_valid"}
+  ]
+}

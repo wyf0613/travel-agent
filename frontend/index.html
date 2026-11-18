@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智能旅行助手</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- 导出依赖：html2canvas 截 DOM，jsPDF 生成 PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>🧳 智能旅行助手</h1>
+    <p class="sub">输入目的地与偏好，自动生成含地图、预算、可编辑的行程计划</p>
+  </header>
+
+  <main class="layout">
+    <!-- 左侧：表单 -->
+    <section class="panel form-panel">
+      <form id="plan-form">
+        <label>目的地
+          <input id="destination" value="北京" placeholder="如：北京 / 上海" required />
+        </label>
+        <label>天数
+          <input id="days" type="number" min="1" max="14" value="3" />
+        </label>
+        <label>偏好（逗号分隔）
+          <input id="preferences" placeholder="历史, 美食, 园林" value="历史, 美食" />
+        </label>
+        <label>预算上限（可选）
+          <input id="budget_limit" type="number" placeholder="不填则不限制" />
+        </label>
+        <label>出发日期（用于查询天气）
+          <input id="start-date" type="date" />
+        </label>
+        <button type="submit" id="submit-btn">生成行程</button>
+      </form>
+      <div id="status" class="status"></div>
+    </section>
+
+    <!-- 右侧：结果 -->
+    <section class="panel result-panel">
+      <div id="result" class="result" hidden>
+        <div class="toolbar">
+          <button id="btn-pdf">导出 PDF</button>
+          <button id="btn-png">导出图片</button>
+        </div>
+        <h2 id="overview"></h2>
+
+        <div class="grid">
+          <div>
+            <h3>🗺️ 地图可视化</h3>
+            <div id="map-container" class="map"></div>
+            <p class="hint" id="map-hint">当前为 SVG 示意图（零 Key 可运行）。在 config.js 填入高德 Key 后自动切换为真实地图。</p>
+          </div>
+          <div>
+            <h3>💰 预算明细</h3>
+            <div id="budget-container" class="budget"></div>
+          </div>
+        </div>
+
+        <h3>📅 每日行程（可编辑）</h3>
+        <div id="days-container" class="days"></div>
+      </div>
+      <div id="empty" class="empty">填写左侧表单并点击「生成行程」开始。</div>
+    </section>
+  </main>
+
+  <!-- 高德 Key 配置 -->
+  <script src="config.js"></script>
+  <!-- 有高德 Web Key 时动态加载 JS API；否则保持 SVG 降级 -->
+  <script>
+    (function () {
+      var key = window.AMAP_WEB_KEY;
+      if (key && typeof key === "string" && !key.startsWith("your_")) {
+        if (window.AMAP_SECURITY_CODE && !window.AMAP_SECURITY_CODE.startsWith("your_")) {
+          window._AMapSecurityConfig = { securityJsCode: window.AMAP_SECURITY_CODE };
+        }
+        var s = document.createElement("script");
+        s.src = "https://webapi.amap.com/maps?v=2.0&key=" + encodeURIComponent(key);
+        s.onload = function () {
+          window.__amapReady = true;
+          if (window.__planReady) window.renderMap();
+        };
+        document.head.appendChild(s);
+        var hint = document.getElementById("map-hint");
+        if (hint) hint.textContent = "已加载高德真实地图。";
+      }
+    })();
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

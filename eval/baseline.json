@@ -1,0 +1,10 @@
+{
+  "total_cases": 30,
+  "passed_cases": 30,
+  "schema_pass_rate": 1.0,
+  "hallucination_block_rate": 1.0,
+  "budget_compliance_rate": 1.0,
+  "degrade_rate": 0.0667,
+  "avg_turns": 4.5,
+  "all_assertions_passed": true
+}

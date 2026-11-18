@@ -1,0 +1,58 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f5f6f8; color: #1f2329;
+}
+.topbar { background: #2b6cb0; color: #fff; padding: 16px 24px; }
+.topbar h1 { margin: 0; font-size: 20px; }
+.topbar .sub { margin: 4px 0 0; opacity: .85; font-size: 13px; }
+
+.layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start; }
+.panel { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.form-panel { width: 300px; flex: none; }
+.result-panel { flex: 1; min-width: 0; }
+
+label { display: block; font-size: 13px; margin-bottom: 12px; color: #444; }
+input {
+  display: block; width: 100%; margin-top: 4px; padding: 8px 10px;
+  border: 1px solid #d0d5dd; border-radius: 6px; font-size: 14px;
+}
+button {
+  cursor: pointer; border: none; border-radius: 6px; padding: 9px 14px;
+  font-size: 14px; background: #2b6cb0; color: #fff;
+}
+button:hover { background: #245a93; }
+#submit-btn { width: 100%; margin-top: 4px; }
+.status { margin-top: 10px; font-size: 13px; color: #666; min-height: 18px; }
+
+.toolbar { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
+.toolbar button { background: #38a169; }
+.toolbar button:hover { background: #2f855a; }
+
+.result h2 { font-size: 16px; margin: 4px 0 16px; }
+.grid { display: grid; grid-template-columns: 1fr 260px; gap: 16px; }
+.map {
+  width: 100%; height: 360px; border: 1px solid #e2e8f0; border-radius: 8px;
+  background: #eef2f7; overflow: hidden;
+}
+.hint { font-size: 12px; color: #888; margin: 6px 0 0; }
+
+.budget { font-size: 14px; }
+.budget .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eee; }
+.budget .total { font-weight: 700; font-size: 16px; color: #c0392b; border-bottom: none; margin-top: 4px; }
+
+.days { margin-top: 8px; }
+.day-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.day-card h4 { margin: 0 0 8px; font-size: 14px; }
+.item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+  background: #f7fafc; margin-bottom: 6px; font-size: 13px;
+}
+.item .name { flex: 1; }
+.item .meta { color: #888; font-size: 12px; }
+.item button { padding: 3px 8px; font-size: 12px; background: #edf2f7; color: #2d3748; }
+.item button.del { background: #fed7d7; color: #c53030; }
+.item .move { display: flex; flex-direction: column; }
+.item .move button { padding: 1px 6px; line-height: 1.2; }
+
+.empty { color: #999; text-align: center; padding: 60px 0; font-size: 14px; }
