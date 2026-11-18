@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>智能旅行助手</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20261116b" />
   <!-- 导出依赖：html2canvas 截 DOM，jsPDF 生成 PDF -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -19,8 +19,12 @@
     <!-- 左侧：表单 -->
     <section class="panel form-panel">
       <form id="plan-form">
-        <label>目的地
-          <input id="destination" value="北京" placeholder="如：北京 / 上海" required />
+        <label>目的地（选择省份与城市）
+          <div class="city-picker">
+            <select id="province" aria-label="省份" required><option value="">— 选择省份 —</option></select>
+            <select id="city" aria-label="城市" required disabled><option value="">— 先选省份 —</option></select>
+          </div>
+          <input id="destination" type="hidden" value="北京" required />
         </label>
         <label>天数
           <input id="days" type="number" min="1" max="14" value="3" />
@@ -34,8 +38,27 @@
         <label>出发日期（用于查询天气）
           <input id="start-date" type="date" />
         </label>
+        <label>交通方式
+          <select id="transportation">
+            <option value="公共交通" selected>公共交通</option>
+            <option value="自驾">自驾</option>
+            <option value="步行">步行</option>
+          </select>
+        </label>
+        <label>住宿类型
+          <select id="accommodation">
+            <option value="舒适型" selected>舒适型</option>
+            <option value="经济型">经济型</option>
+            <option value="豪华型">豪华型</option>
+          </select>
+        </label>
         <button type="submit" id="submit-btn">生成行程</button>
       </form>
+      <!-- 分阶段进度：让等待期的每一步可见，避免用户以为卡死 -->
+      <div id="progress-wrap" class="progress-wrap" hidden>
+        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+        <div id="progress-text" class="progress-text">准备中…</div>
+      </div>
       <div id="status" class="status"></div>
     </section>
 
@@ -48,49 +71,103 @@
         </div>
         <h2 id="overview"></h2>
 
+        <!-- 区块导航：结果页较长，点击平滑滚动到对应区块 -->
+        <nav class="section-nav">
+          <a href="#sec-budget">💰 预算</a>
+          <a href="#sec-map">🗺️ 地图</a>
+          <a href="#sec-hotels">🏨 酒店</a>
+          <a href="#sec-weather">🌤️ 天气</a>
+          <a href="#sec-days">📅 每日行程</a>
+        </nav>
+
         <div class="grid">
           <div>
-            <h3>🗺️ 地图可视化</h3>
+            <h3 id="sec-map">🗺️ 地图可视化</h3>
             <div id="map-container" class="map"></div>
-            <p class="hint" id="map-hint">当前为 SVG 示意图（零 Key 可运行）。在 config.js 填入高德 Key 后自动切换为真实地图。线上演示模式使用内置示例数据。</p>
+            <p class="hint" id="map-hint">地图使用高德 JS API（Key 已配置，需域名白名单含 github.io）。若底图未加载则自动显示 SVG 示意图，行程、预算、编辑、导出不受影响。</p>
           </div>
           <div>
-            <h3>💰 预算明细</h3>
+            <h3 id="sec-budget">💰 预算明细</h3>
             <div id="budget-container" class="budget"></div>
           </div>
         </div>
 
-        <h3>📅 每日行程（可编辑）</h3>
+        <h3 id="sec-hotels">🏨 酒店选项（便利度 / 评分 / 价格对比）</h3>
+        <div id="hotels-container" class="hotels"></div>
+
+        <h3 id="sec-weather">🌤️ 天气</h3>
+        <div id="weather-container" class="weather"></div>
+
+        <!-- 编辑工具条：进入编辑后才出现「添加 / 保存 / 取消」 -->
+        <div class="section-head">
+          <h3 id="sec-days">📅 每日行程</h3>
+          <div class="edit-tools">
+            <button type="button" id="btn-edit">✏️ 编辑行程</button>
+            <button type="button" id="btn-add" hidden>＋ 添加景点</button>
+            <button type="button" id="btn-save" hidden>✅ 保存</button>
+            <button type="button" id="btn-cancel" hidden>↩️ 取消</button>
+          </div>
+        </div>
+        <div id="add-panel" hidden></div>
         <div id="days-container" class="days"></div>
       </div>
       <div id="empty" class="empty">填写左侧表单并点击「生成行程」开始。</div>
     </section>
   </main>
 
-  <!-- 高德 Key 配置 -->
+  <!-- 查询历史（情景记忆）：可回看、可一键回放、可删除 -->
+  <section class="panel history-panel" id="history-panel">
+    <div class="history-head">
+      <h2>查询历史</h2>
+      <div>
+        <button type="button" id="btn-history-refresh">刷新</button>
+        <button type="button" id="btn-history-clear">清空我的历史</button>
+      </div>
+    </div>
+    <p class="hint">记录保存在服务端 SQLite，仅按当前浏览器的会话 ID 隔离。点击任一条可回放完整行程。</p>
+    <div id="history-list" class="history-list"><p class="hint">暂无记录</p></div>
+  </section>
+
+  <!-- 高德 Key 与 API 地址配置（静态部署版，Key 已写入 config.js） -->
   <script src="config.js"></script>
-  <!-- 前端内置 mock：后端不可达时降级使用（GitHub Pages 演示） -->
-  <script src="mock.js"></script>
+  <!-- 演示快照：公网静态部署（后端不可达）时兜底展示预生成的真实行程数据 -->
+  <script src="demo-data.js"></script>
   <!-- 有高德 Web Key 时动态加载 JS API；否则保持 SVG 降级 -->
   <script>
+    /* 高德 JS API 只作为"渐进增强"加载。
+       页面始终先由 app.js 用真实经纬度画 SVG 示意图，本段只是尝试升级为真实底图。
+       任何失败（无 Key / 脚本加载失败 / 鉴权失败）都保留 SVG 并给出可读原因。 */
     (function () {
+      // 本段在 app.js 之前执行，showMapHint 还不存在。
+      // 统一把状态记到 __mapHintReason，由 app.js 初始化时呈现。
+      window.__setMapState = function (reason, err) {
+        window.__mapHintReason = reason;
+        if (err) window.__amapLastError = err;
+        if (window.showMapHint) window.showMapHint(reason);
+      };
       var key = window.AMAP_WEB_KEY;
-      if (key && typeof key === "string" && !key.startsWith("your_")) {
-        if (window.AMAP_SECURITY_CODE && !window.AMAP_SECURITY_CODE.startsWith("your_")) {
-          window._AMapSecurityConfig = { securityJsCode: window.AMAP_SECURITY_CODE };
-        }
-        var s = document.createElement("script");
-        s.src = "https://webapi.amap.com/maps?v=2.0&key=" + encodeURIComponent(key);
-        s.onload = function () {
-          window.__amapReady = true;
-          if (window.__planReady) window.renderMap();
-        };
-        document.head.appendChild(s);
-        var hint = document.getElementById("map-hint");
-        if (hint) hint.textContent = "已加载高德真实地图。";
+      if (!key || typeof key !== "string" || key.startsWith("your_")) {
+        window.__setMapState("no-key");
+        return;
       }
+      if (window.AMAP_SECURITY_CODE && !window.AMAP_SECURITY_CODE.startsWith("your_")) {
+        window._AMapSecurityConfig = { securityJsCode: window.AMAP_SECURITY_CODE };
+      }
+      var s = document.createElement("script");
+      s.src = "https://webapi.amap.com/maps?v=2.0&key=" + encodeURIComponent(key);
+      s.async = true;
+      s.onload = function () {
+        // 脚本 200 不代表鉴权通过：只标记"可尝试"，成功与否由 renderAmap 的 complete 决定
+        window.__amapReady = true;
+        if (window.__planReady) window.renderMap();
+      };
+      s.onerror = function () {
+        window.__amapBroken = true;
+        window.__setMapState("load-failed", "webapi.amap.com 脚本请求失败");
+      };
+      document.head.appendChild(s);
     })();
   </script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20261116b"></script>
 </body>
 </html>

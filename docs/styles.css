@@ -17,11 +17,19 @@ input {
   display: block; width: 100%; margin-top: 4px; padding: 8px 10px;
   border: 1px solid #d0d5dd; border-radius: 6px; font-size: 14px;
 }
+/* 省-市联动选择器：两个下拉并排，等宽 */
+.city-picker { display: flex; gap: 8px; margin-top: 4px; }
+.city-picker select {
+  flex: 1; min-width: 0; padding: 8px 6px; font-size: 13px;
+  border: 1px solid #d0d5dd; border-radius: 6px; background: #fff;
+}
+.city-picker select:disabled { background: #f5f6f8; color: #999; }
 button {
   cursor: pointer; border: none; border-radius: 6px; padding: 9px 14px;
   font-size: 14px; background: #2b6cb0; color: #fff;
 }
-button:hover { background: #245a93; }
+button:disabled { background: #a0aec0; cursor: not-allowed; }
+button:hover:disabled { background: #a0aec0; }
 #submit-btn { width: 100%; margin-top: 4px; }
 .status { margin-top: 10px; font-size: 13px; color: #666; min-height: 18px; }
 
@@ -36,6 +44,11 @@ button:hover { background: #245a93; }
   background: #eef2f7; overflow: hidden;
 }
 .hint { font-size: 12px; color: #888; margin: 6px 0 0; }
+.map-missing {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; gap: 6px; color: #975a16; font-size: 13px; text-align: center;
+}
+.map-missing span { font-size: 12px; color: #a0aec0; }
 
 .budget { font-size: 14px; }
 .budget .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eee; }
@@ -54,5 +67,253 @@ button:hover { background: #245a93; }
 .item button.del { background: #fed7d7; color: #c53030; }
 .item .move { display: flex; flex-direction: column; }
 .item .move button { padding: 1px 6px; line-height: 1.2; }
+.item.free { background: #fffaf0; color: #975a16; font-size: 12px; border-left: 3px solid #dd9b28; }
 
 .empty { color: #999; text-align: center; padding: 60px 0; font-size: 14px; }
+/* 规划失败时的错误卡片：替换空状态引导，左对齐便于读长错误文案 */
+.empty.plan-error {
+  color: #c53030; text-align: left; padding: 20px 24px; font-size: 13px;
+  line-height: 1.7; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px;
+  margin: 12px; white-space: pre-wrap; word-break: break-word;
+}
+
+/* 演示快照提示条（公网静态部署时后端不可达，使用预生成数据） */
+.demo-badge {
+  background: #fffaf0;
+  border: 1px solid #f6ad55;
+  color: #9c4221;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+/* ---------- 酒店选项卡片 ---------- */
+.hotels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+.hotel-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+.hotel-card.recommended {
+  border-color: #f6ad55;
+  background: #fffaf0;
+}
+.hotel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.hotel-name { font-weight: 600; }
+.hotel-star { color: #d69e2e; letter-spacing: 1px; }
+.hotel-meta {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.hotel-price { font-size: 16px; font-weight: 600; color: #2b6cb0; }
+.hotel-price small { font-size: 12px; font-weight: 400; color: #718096; }
+.hotel-tag {
+  background: #edf2f7;
+  color: #4a5568;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.hotel-tag.score { background: #fff5e6; color: #b7791f; }
+.hotel-addr { margin-top: 6px; font-size: 12px; color: #718096; }
+.hotel-pc {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pc { margin: 0; padding-left: 16px; font-size: 12px; }
+.pc.pros li { color: #276749; }
+.pc.cons li { color: #9b2c2c; }
+
+/* ---------- 每日路线摘要 ---------- */
+.route-line {
+  margin: 6px 0;
+  padding: 6px 10px;
+  background: #ebf8ff;
+  border-left: 3px solid #2b6cb0;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #2c5282;
+}
+.route-steps {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #4a5568;
+}
+
+/* 估值标记（高德免费接口不返回房价/星级时的诚实提示） */
+.hotel-price.est { color: #b7791f; }
+.est-tag { margin-left: 4px; font-size: 10px; color: #b7791f; }
+.hotel-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9b2c2c;
+  background: #fff5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+/* 预算中住宿费缺失：与真实金额区分开，避免被当成「住宿免费」 */
+.budget .budget-unknown { color: #b7791f; font-size: 13px; }
+.budget .budget-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9b2c2c;
+  background: #fff5f5;
+  padding: 6px 8px;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+
+/* ---------- 加载进度 ---------- */
+.progress-wrap { margin-top: 10px; }
+.progress-bar { height: 8px; background: #edf2f7; border-radius: 999px; overflow: hidden; }
+.progress-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, #4299e1, #2b6cb0);
+  border-radius: 999px; transition: width 0.3s ease;
+}
+.progress-text { margin-top: 6px; font-size: 12px; color: #4a5568; }
+
+/* ---------- 区块导航 ---------- */
+.section-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.section-nav a {
+  font-size: 12px; padding: 5px 10px; border-radius: 999px;
+  background: #edf2f7; color: #2b6cb0; text-decoration: none; white-space: nowrap;
+}
+.section-nav a:hover { background: #e2e8f0; }
+
+/* ---------- 天气区块 ---------- */
+.weather-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.weather-card {
+  display: flex; flex-direction: column; min-width: 96px;
+  padding: 8px 10px; background: #f7fafc;
+  border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px;
+}
+.weather-card .wd { color: #718096; }
+.weather-card .wt { margin-top: 2px; font-weight: 600; color: #2d3748; }
+.weather-card.empty .wt { color: #a0aec0; font-weight: 400; }
+.weather-note {
+  margin-top: 8px; font-size: 11px; color: #9b2c2c;
+  background: #fff5f5; padding: 6px 8px; border-radius: 4px;
+}
+
+/* ---------- 每日行程区头部与编辑工具 ---------- */
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+}
+.edit-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.edit-tools button {
+  font-size: 12px; padding: 5px 10px; border: 1px solid #cbd5e0;
+  background: #fff; border-radius: 6px; cursor: pointer;
+}
+.edit-tools button:hover { background: #edf2f7; }
+
+/* ---------- 添加景点面板 ---------- */
+.add-panel {
+  display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+  padding: 10px; margin-bottom: 8px; background: #f7fafc;
+  border: 1px dashed #cbd5e0; border-radius: 8px; font-size: 12px;
+}
+.add-panel label { display: flex; flex-direction: column; gap: 4px; }
+.add-panel select { padding: 4px 6px; border: 1px solid #cbd5e0; border-radius: 4px; }
+.add-panel button {
+  padding: 5px 10px; border: 1px solid #cbd5e0;
+  background: #fff; border-radius: 6px; cursor: pointer;
+}
+
+/* ---------- 景点配图 ---------- */
+.item-img {
+  width: 72px; height: 54px; object-fit: cover;
+  border-radius: 6px; flex-shrink: 0; background: #edf2f7;
+  border: 1px solid #e2e8f0;
+}
+
+/* 锚点平滑滚动用 CSS 实现，无需 JS */
+html { scroll-behavior: smooth; }
+
+/* ---------- 移动端适配（手机 / 窄屏） ---------- */
+@media (max-width: 768px) {
+  .topbar { padding: 12px 14px; }
+  .topbar h1 { font-size: 17px; }
+  .topbar .sub { font-size: 12px; }
+
+  /* 双栏改单栏：表单在上、结果在下，避免被横向挤压 */
+  .layout { flex-direction: column; padding: 10px; gap: 12px; }
+  .form-panel, .result-panel { width: 100%; }
+  .panel { padding: 12px; }
+
+  /* 地图与预算由左右并排改为上下排列 */
+  .grid { grid-template-columns: 1fr; gap: 12px; }
+  .map { height: 260px; }
+
+  /* 触摸友好：16px 可避免 iOS 聚焦输入框时自动放大页面 */
+  label { font-size: 14px; margin-bottom: 10px; }
+  input { font-size: 16px; padding: 10px; }
+  button { font-size: 16px; padding: 11px 16px; }
+  #submit-btn { padding: 13px; font-size: 16px; }
+
+  /* 行程条目允许换行，避免名字/标签被压成一行看不清 */
+  .item { flex-wrap: wrap; gap: 6px; }
+  .item .name { flex: 1 1 100%; }
+  .item .meta { flex: 1 1 100%; }
+  .item .move { flex-direction: row; }
+
+  /* 酒店卡片与优缺点列表在窄屏单列 */
+  .hotels { grid-template-columns: 1fr; }
+  .hotel-pc { grid-template-columns: 1fr; }
+
+  .toolbar { justify-content: flex-start; flex-wrap: wrap; }
+  .day-card { padding: 10px; }
+  .empty { padding: 32px 0; }
+  .result h2 { font-size: 15px; }
+}
+
+/* 超窄屏（如 iPhone SE）进一步收紧 */
+@media (max-width: 400px) {
+  .layout { padding: 8px; }
+  .panel { padding: 10px; }
+  .map { height: 220px; }
+  .topbar h1 { font-size: 16px; }
+}
+
+/* 房价缺失时（高德免费接口不返回房价） */
+.hotel-price.unknown { color: #718096; font-size: 14px; }
+
+/* ---------- 查询历史 ---------- */
+.history-panel { margin: 0 16px 24px; }
+.history-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.history-head h2 { font-size: 16px; margin: 0; }
+.history-head button { font-size: 12px; padding: 5px 10px; margin-left: 6px; }
+.history-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.history-item {
+  border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px;
+  min-width: 210px; flex: 1 1 210px; background: #fafbfc; cursor: pointer;
+}
+.history-item:hover { border-color: #2b6cb0; background: #f0f6fd; }
+.history-item.failed { border-left: 3px solid #e53e3e; cursor: default; }
+.history-item .hi-title { font-weight: 600; font-size: 14px; color: #2d3748; }
+.history-item .hi-meta { font-size: 12px; color: #718096; margin-top: 4px; line-height: 1.5; }
+.history-item .hi-err { font-size: 12px; color: #c53030; margin-top: 4px; }
+.hi-del {
+  float: right; font-size: 12px; padding: 2px 7px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer;
+}
+.hi-del:hover { border-color: #e53e3e; color: #e53e3e; }
