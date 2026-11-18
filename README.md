@@ -14,7 +14,7 @@
 | 需求 | 实现位置 |
 |---|---|
 | (1) 智能行程规划 | `llm_backends.py`：`MockLLMBackend`（零 Key 生成器）/ `RealLLMBackend`（高德取真实候选 + LLM function calling 规划） |
-| (2) 地图可视化 | `frontend/app.js`：`renderAmap()`（高德 JS API 真实地图）/ `renderSvgMap()`（零 Key 降级 SVG） |
+| (2) 地图可视化 | `docs/app.js`：`renderAmap()`（高德 JS API 真实地图）/ `renderSvgMap()`（零 Key 降级 SVG） |
 | (3) 预算计算 | `Budget` 模型 + 前端 `renderBudget()`，编辑时实时重算 |
 | (4) 行程编辑 | 前端删除 / 上下移，触发 `recomputeBudget()` + 重绘地图 |
 | (5) 导出 PDF/图片 | `html2canvas` + `jsPDF` |
@@ -95,12 +95,15 @@ travel-agent/
 │   └── verify.py               # ★ 一键自证脚本
 ├── eval/                    # 阶段2 离线评测集
 │   ├── cases.json / run_eval.py / baseline.json / report.md
-└── frontend/                # 单页应用（无构建步骤）
+└── docs/                    # 单页应用（无构建步骤，同时作为 GitHub Pages 发布目录）
     ├── index.html           # 动态加载高德 JS API（有 key 才加载）
-    ├── app.js               # 规划/地图/预算/编辑/导出
+    ├── app.js               # 规划/地图/预算/编辑/导出（后端不可达时自动降级）
+    ├── mock.js              # 前端内置 mock 生成器（GitHub Pages 无后端时演示用）
     ├── config.js            # 高德 Web Key 配置（占位降级）
     └── styles.css
 ```
+
+> **在线演示**：GitHub Pages 从 `docs/` 构建，地址 https://wyf0613.github.io/travel-agent/ 。静态站点无后端时，`app.js` 自动降级到 `mock.js`，行程/地图/预算/编辑/导出功能均可完整演示（数据为内置示例）。本地运行时若后端已启动，则优先使用真实后端。
 
 ## 快速运行（零 Key，5 分钟）
 
@@ -110,14 +113,14 @@ cd backend
 .venv/Scripts/python -m uvicorn app:app --reload --port 8000   # 若 8000 被占用可换端口，如 --port 8899
 
 # 2) 前端：用任意静态服务器打开
-cd ../frontend
+cd ../docs
 python -m http.server 8080
 # 浏览器访问 http://127.0.0.1:8080
 ```
 
 打开后填「北京 / 3 天 / 历史,美食」点生成，即可看到行程、**SVG 地图**、预算、编辑与导出（零 Key 也能完整演示）。
 
-> **端口对齐提醒**：前端 `frontend/app.js` 第 5 行的 `API` 常量写死了后端地址（默认 `http://127.0.0.1:8000/api/trip/plan`）。**若启动后端时改了端口（例如本会话临时用 `8899`，是因为 8000 被上次残留进程占用、且沙箱无法杀进程），必须同步把 `app.js` 里的端口改成相同值**，否则前端请求打不到后端。
+> **端口对齐提醒**：前端 `docs/app.js` 第 5 行的 `API` 常量写死了后端地址（默认 `http://127.0.0.1:8000/api/trip/plan`）。**若启动后端时改了端口（例如本会话临时用 `8899`，是因为 8000 被上次残留进程占用、且沙箱无法杀进程），必须同步把 `app.js` 里的端口改成相同值**，否则前端请求打不到后端。
 
 ## 切换到真实模式（接 LLM + 高德地图）
 
@@ -125,7 +128,7 @@ python -m http.server 8080
 2. `cp .env.example .env`
 3. 申请两类高德 Key（[高德开放平台](https://lbs.amap.com/)，均有免费配额）：
    - **Web 服务** key → 填入 `.env` 的 `AMAP_API_KEY`（后端调用 POI / 天气 / 地理编码，**服务端**，勿泄露）
-   - **Web 端(JS API)** key → 填入 `frontend/config.js` 的 `AMAP_WEB_KEY`；JS API 2.0 安全密钥 → `AMAP_SECURITY_CODE`
+   - **Web 端(JS API)** key → 填入 `docs/config.js` 的 `AMAP_WEB_KEY`；JS API 2.0 安全密钥 → `AMAP_SECURITY_CODE`
 4. 配置 LLM：在 `.env` 填 `LLM_API_KEY / LLM_BASE_URL / LLM_MODEL_ID`（**OpenAI 兼容接口**，可换 DeepSeek / 通义 / 本地 vLLM）
 5. `.env` 设 `AGENT_MODE=real`，重启后端
 6. 刷新前端页面，地图自动从 SVG 切换为高德真实地图
