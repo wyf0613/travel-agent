@@ -1,9 +1,36 @@
 /* 单页前端：规划 / 地图 / 预算 / 编辑 / 导出
- * 后端默认 mock 模式（零 Key），POST /api/trip/plan 返回 TripPlan JSON。
+ * 数据来源：优先调用本地后端 POST /api/trip/plan；不可达时自动降级到前端 mock.js，
+ * 使 GitHub Pages 等纯静态托管环境下也能完整演示（零 Key、零后端）。
  * 地图：有高德 Web Key 时用 AMap JS API 真实渲染，否则降级为 SVG 示意图。
  */
 const API = "http://127.0.0.1:8921/api/trip/plan";
+// 后端请求超时（毫秒）：静态站点上请求本机端口会很快失败，短暂等待后降级
+const BACKEND_TIMEOUT_MS = 2500;
 const state = { plan: null };
+
+async function requestPlan(payload) {
+  // 1) 先试本地后端（带超时，避免静态站点上长时间挂起）
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), BACKEND_TIMEOUT_MS);
+  try {
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (res.ok) return { plan: await res.json(), source: "backend" };
+  } catch (e) {
+    // 后端不可达/超时/被拒绝 → 走前端降级
+  } finally {
+    clearTimeout(timer);
+  }
+  // 2) 降级：前端内置 mock（与后端逻辑一致）
+  if (typeof window.generateTripMock !== "function") {
+    throw new Error("后端不可达，且前端 mock.js 未加载");
+  }
+  return { plan: window.generateTripMock(payload), source: "frontend-mock" };
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -19,20 +46,14 @@ document.getElementById("plan-form").addEventListener("submit", async (e) => {
     start_date: $("start-date").value || null,
   };
   try {
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error((err.detail || "HTTP " + res.status));
-    }
-    state.plan = await res.json();
+    const result = await requestPlan(payload);
+    state.plan = result.plan;
     renderAll();
-    status.textContent = "完成 ✅";
+    status.textContent = result.source === "backend"
+      ? "完成 ✅（本地后端）"
+      : "完成 ✅（前端演示模式 · 未连接后端，数据为内置示例）";
   } catch (err) {
-    status.textContent = "请求失败：" + err.message + "（确认后端已启动于 8900 端口）";
+    status.textContent = "生成失败：" + err.message;
   }
 });
 

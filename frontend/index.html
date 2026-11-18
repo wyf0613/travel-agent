@@ -52,7 +52,7 @@
           <div>
             <h3>🗺️ 地图可视化</h3>
             <div id="map-container" class="map"></div>
-            <p class="hint" id="map-hint">当前为 SVG 示意图（零 Key 可运行）。在 config.js 填入高德 Key 后自动切换为真实地图。</p>
+            <p class="hint" id="map-hint">当前为 SVG 示意图（零 Key 可运行）。在 config.js 填入高德 Key 后自动切换为真实地图。线上演示模式使用内置示例数据。</p>
           </div>
           <div>
             <h3>💰 预算明细</h3>
@@ -69,6 +69,8 @@
 
   <!-- 高德 Key 配置 -->
   <script src="config.js"></script>
+  <!-- 前端内置 mock：后端不可达时降级使用（GitHub Pages 演示） -->
+  <script src="mock.js"></script>
   <!-- 有高德 Web Key 时动态加载 JS API；否则保持 SVG 降级 -->
   <script>
     (function () {
