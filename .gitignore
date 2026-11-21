@@ -22,3 +22,9 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# 本地数据库（查询历史，运行时生成）
+*.db
+*.db-wal
+*.db-shm
+backend/data/
