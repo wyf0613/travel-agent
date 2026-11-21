@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import os
 import time
+import uuid
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -20,7 +22,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 
-from errors import AppError, ValidationError
+import history
+from errors import AppError, NotFoundError, ValidationError
 from llm_backends import get_backend
 from models import TripPlan
 from observability import get_logger, get_request_id, new_request_id, setup_logging
@@ -28,6 +31,7 @@ from observability import get_logger, get_request_id, new_request_id, setup_logg
 load_dotenv()
 setup_logging()
 log = get_logger("travel.api")
+history.init_db()  # 服务启动时建表（幂等，已有表不动）
 
 app = FastAPI(title="Travel Agent API", version="0.2.0")
 
@@ -99,6 +103,7 @@ class PlanRequest(BaseModel):
     preferences: List[str] = []
     budget_limit: Optional[float] = None
     start_date: Optional[str] = None  # 出发日期 YYYY-MM-DD，用于查询天气
+    session_id: Optional[str] = None  # 浏览器级会话 ID，用于隔离查询历史
 
 
 @app.get("/health")
@@ -121,11 +126,63 @@ def plan_trip(req: PlanRequest) -> TripPlan:
         "preferences": req.preferences, "budget_limit": req.budget_limit,
     })
     backend = get_backend()  # 配置错（缺 key）会以 ConfigError 冒泡 -> 500
+    started = time.perf_counter()
     plan = backend.plan(
         req.destination, req.days, req.preferences, req.budget_limit, req.start_date
     )
+    elapsed = round(time.perf_counter() - started, 2)
     log.info("plan_response", extra={
         "destination": req.destination, "attractions": len(plan.attractions),
         "days_planned": len(plan.days_plan), "total": plan.budget.total,
     })
+
+    # 成功落库：前端「查询历史」面板据此展示与回放。落库失败不影响主流程。
+    if req.session_id:
+        try:
+            history.save({
+                "id": uuid.uuid4().hex,
+                "session_id": req.session_id,
+                "destination": req.destination,
+                "days": req.days,
+                "preferences": req.preferences,
+                "ok": True,
+                "n_attractions": len(plan.attractions),
+                "budget_total": plan.budget.total,
+                "elapsed_s": elapsed,
+                "arch": os.getenv("AGENT_MODE", "mock"),
+                "plan_json": plan.model_dump_json(),
+                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            })
+        except Exception:
+            log.exception("history_save_failed")  # 历史是旁路功能，不能拖垮规划
     return plan
+
+
+# ---------- 查询历史路由（对应前端 docs/app.js 的 /api/history 调用） ----------
+@app.get("/api/history")
+def list_history(session_id: str = "", limit: int = 12):
+    """列出当前会话的历史，按时间倒序。"""
+    if not session_id:
+        raise ValidationError("session_id 不能为空")
+    return {"items": history.list_by_session(session_id, min(limit, 100))}
+
+
+@app.get("/api/history/{record_id}")
+def get_history(record_id: str, session_id: str = ""):
+    """取单条完整记录（含 plan_json，供回放）。带 session_id 防越权。"""
+    if not session_id:
+        raise ValidationError("session_id 不能为空")
+    item = history.get_one(record_id, session_id)
+    if item is None:
+        raise NotFoundError("历史记录不存在或不属于当前会话")
+    return item
+
+
+@app.delete("/api/history/{record_id}")
+def delete_history(record_id: str, session_id: str = ""):
+    """删除单条。"""
+    if not session_id:
+        raise ValidationError("session_id 不能为空")
+    if not history.delete_one(record_id, session_id):
+        raise NotFoundError("历史记录不存在或不属于当前会话")
+    return {"ok": True}
