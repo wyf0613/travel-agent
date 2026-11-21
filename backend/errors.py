@@ -67,3 +67,10 @@ class AgentError(AppError):
 
     status_code = 500
     code = "AGENT_ERROR"
+
+
+class NotFoundError(AppError):
+    """资源不存在（如历史记录 id 找不到）——404。"""
+
+    status_code = 404
+    code = "NOT_FOUND"
